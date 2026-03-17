@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { createPublicClient, createWalletClient, custom, http, defineChain, type PublicClient, type WalletClient, type Address } from 'viem';
+import { createPublicClient, createWalletClient, custom, webSocket, defineChain, type PublicClient, type WalletClient, type Address } from 'viem';
 import { SDK } from '@somnia-chain/reactivity';
 
 export const somniaTestnet = defineChain({
@@ -46,7 +46,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0xC488', chainName: 'Somnia Testnet', nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 }, rpcUrls: ['https://dream-rpc.somnia.network'], blockExplorerUrls: ['https://shannon-explorer.somnia.network'] }] });
       }
 
-      const pub = createPublicClient({ chain: somniaTestnet, transport: http() });
+      const pub = createPublicClient({ chain: somniaTestnet, transport: webSocket('wss://dream-rpc.somnia.network') });
       const wal = createWalletClient({ account: acc, chain: somniaTestnet, transport: custom(window.ethereum) });
       const reactivitySdk = new SDK({ public: pub, wallet: wal });
 

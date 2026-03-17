@@ -55,7 +55,7 @@ graph TD
 
 ---
 
-## Reactivity SDK Integration
+## How Reactivity Is Used
 
 ReactChain uses **both layers** of the Somnia Reactivity SDK.
 

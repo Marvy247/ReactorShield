@@ -34,7 +34,7 @@ async function main() {
     handlerContractAddress: ACTION_EXECUTOR_ADDRESS,
     priorityFeePerGas: parseGwei('2'),
     maxFeePerGas: parseGwei('10'),
-    gasLimit: 2_000_000n,
+    gasLimit: 5_000_000n,
     isGuaranteed: true,
     isCoalesced: false,
   });
