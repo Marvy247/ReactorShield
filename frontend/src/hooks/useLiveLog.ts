@@ -4,15 +4,16 @@ import { CONTRACT_ADDRESSES, LIQUIDATION_GUARD_ABI, LENDING_PROTOCOL_ABI } from 
 import { createPublicClient, http } from 'viem';
 import { somniaTestnet } from '../context/Web3Context';
 
+export type GuardEventType = 'GuardTriggered' | 'LiquidationRisk' | 'PositionProtected';
+
 export interface GuardEvent {
   id: string;
   timestamp: number;
   positionId: string;
   owner: string;
-  type: 'GuardTriggered' | 'GuardFailed' | 'LiquidationRisk' | 'PositionProtected';
+  type: GuardEventType;
   action?: string;
   healthFactor?: number;
-  reason?: string;
 }
 
 export function useLiveLog(onExecution?: () => void) {
@@ -53,20 +54,6 @@ export function useLiveLog(onExecution?: () => void) {
           type: 'GuardTriggered',
           action: log.args?.action,
           healthFactor: log.args?.healthFactor ? Number(log.args.healthFactor) / 1e18 : undefined,
-        })),
-      }));
-
-      unsubs.push(client.watchContractEvent({
-        address: CONTRACT_ADDRESSES.LiquidationGuard,
-        abi: LIQUIDATION_GUARD_ABI,
-        eventName: 'GuardFailed',
-        onLogs: (newLogs) => newLogs.forEach((log: any) => addLog({
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-          positionId: log.args?.positionId?.toString() ?? '?',
-          owner: '?',
-          type: 'GuardFailed',
-          reason: log.args?.reason,
         })),
       }));
     }

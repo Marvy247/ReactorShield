@@ -90,8 +90,11 @@ contract MockLendingProtocol {
         if (!p.isOpen || p.debtAmount == 0) return type(uint256).max;
         uint256 price = oracle.getPrice(p.collateralAsset);
         if (price == 0) return type(uint256).max;
-        uint256 collateralValue = (p.collateralAmount * price * LIQUIDATION_THRESHOLD) / 100;
-        return (collateralValue * 1e18) / (p.debtAmount * price);
+        // collateralValueUSD = collateralAmount * price / 1e18 (price is 18-decimal)
+        // healthFactor = (collateralValueUSD * threshold%) / debtAmount, scaled 1e18
+        uint256 collateralValueUSD = (p.collateralAmount * price) / 1e18;
+        uint256 adjustedCollateral = (collateralValueUSD * LIQUIDATION_THRESHOLD) / 100;
+        return (adjustedCollateral * 1e18) / p.debtAmount;
     }
 
     function _emitHealthFactor(uint256 positionId) internal {
@@ -100,7 +103,10 @@ contract MockLendingProtocol {
         uint256 hf = _healthFactor(positionId);
         emit HealthFactorUpdated(positionId, p.owner, hf, p.collateralAmount, p.debtAmount);
         if (hf <= LIQUIDATION_HEALTH) {
-            uint256 shortfall = p.debtAmount - (p.collateralAmount * LIQUIDATION_THRESHOLD / 100);
+            uint256 price = oracle.getPrice(p.collateralAsset);
+            uint256 collateralValueUSD = price > 0 ? (p.collateralAmount * price) / 1e18 : 0;
+            uint256 adjustedCollateral = (collateralValueUSD * LIQUIDATION_THRESHOLD) / 100;
+            uint256 shortfall = p.debtAmount > adjustedCollateral ? p.debtAmount - adjustedCollateral : 0;
             emit LiquidationRisk(positionId, p.owner, hf, shortfall);
         }
     }

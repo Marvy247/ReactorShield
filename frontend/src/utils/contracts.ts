@@ -29,7 +29,6 @@ export const LENDING_PROTOCOL_ABI = [
 
 export const LIQUIDATION_GUARD_ABI = [
   { name: 'GuardTriggered', type: 'event', inputs: [{ name: 'positionId', type: 'uint256', indexed: true }, { name: 'owner', type: 'address', indexed: true }, { name: 'healthFactor', type: 'uint256', indexed: false }, { name: 'action', type: 'string', indexed: false }] },
-  { name: 'GuardFailed', type: 'event', inputs: [{ name: 'positionId', type: 'uint256', indexed: true }, { name: 'reason', type: 'string', indexed: false }] },
 ] as const;
 
 // Mock asset addresses for demo (deterministic)

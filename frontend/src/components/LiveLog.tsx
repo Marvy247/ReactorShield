@@ -1,10 +1,9 @@
 import { type GuardEvent } from '../hooks/useLiveLog';
 
 const TYPE_CONFIG: Record<GuardEvent['type'], { icon: string; label: string; color: string }> = {
-  GuardTriggered: { icon: '🛡️', label: 'Guard Triggered', color: 'text-emerald-400' },
-  GuardFailed:    { icon: '❌', label: 'Guard Failed',    color: 'text-red-400' },
-  LiquidationRisk:{ icon: '⚠️', label: 'Liquidation Risk', color: 'text-orange-400' },
-  PositionProtected: { icon: '✅', label: 'Position Protected', color: 'text-emerald-300' },
+  GuardTriggered:    { icon: '🛡️', label: 'Guard Triggered',    color: 'text-emerald-400' },
+  LiquidationRisk:  { icon: '⚠️', label: 'Liquidation Risk',   color: 'text-orange-400' },
+  PositionProtected:{ icon: '✅', label: 'Position Protected',  color: 'text-emerald-300' },
 };
 
 function timeAgo(ts: number) {
@@ -44,7 +43,6 @@ export function LiveLog({ logs, isListening }: { logs: GuardEvent[]; isListening
                   {log.healthFactor !== undefined && (
                     <div className="text-xs text-zinc-400 mt-0.5">HF: <span className="font-mono text-zinc-300">{log.healthFactor.toFixed(3)}</span></div>
                   )}
-                  {log.reason && <div className="text-xs text-red-400 mt-0.5">{log.reason}</div>}
                 </div>
                 <span className="text-xs text-zinc-600 shrink-0">{timeAgo(log.timestamp)}</span>
               </div>

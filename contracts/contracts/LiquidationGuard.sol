@@ -18,7 +18,6 @@ contract LiquidationGuard is SomniaEventHandler {
         keccak256("HealthFactorUpdated(uint256,address,uint256,uint256,uint256)");
 
     event GuardTriggered(uint256 indexed positionId, address indexed owner, uint256 healthFactor, string action);
-    event GuardFailed(uint256 indexed positionId, string reason);
 
     constructor(address _lendingProtocol) {
         lendingProtocol = MockLendingProtocol(_lendingProtocol);
@@ -26,7 +25,7 @@ contract LiquidationGuard is SomniaEventHandler {
 
     /// @notice Called by Somnia Reactivity validators when MockLendingProtocol emits an event
     function _onEvent(
-        address emitter,
+        address, /* emitter */
         bytes32[] calldata eventTopics,
         bytes calldata data
     ) internal override {
@@ -42,38 +41,33 @@ contract LiquidationGuard is SomniaEventHandler {
 
     function _handleLiquidationRisk(bytes32[] calldata eventTopics, bytes calldata data) internal {
         // LiquidationRisk(uint256 indexed positionId, address indexed owner, uint256 healthFactor, uint256 shortfall)
+        // eventTopics: [0]=topic0, [1]=positionId, [2]=owner
+        if (eventTopics.length < 3) return;
         uint256 positionId = uint256(eventTopics[1]);
+        address owner = address(uint160(uint256(eventTopics[2])));
         (uint256 healthFactor,) = abi.decode(data, (uint256, uint256));
 
-        // Auto-protect: add collateral equivalent to 20% of current collateral
-        try lendingProtocol.positions(positionId) returns (
-            address owner, address, uint256 collateralAmount, uint256, bool isOpen
-        ) {
-            if (!isOpen) return;
-            uint256 topUp = collateralAmount / 5; // 20% top-up
-            lendingProtocol.addCollateral(positionId, topUp);
-            emit GuardTriggered(positionId, owner, healthFactor, "AUTO_COLLATERAL_TOPUP");
-        } catch {
-            emit GuardFailed(positionId, "Position read failed");
-        }
+        (,, uint256 collateralAmount,, bool isOpen) = lendingProtocol.positions(positionId);
+        if (!isOpen) return;
+        uint256 topUp = collateralAmount / 5; // 20% top-up
+        lendingProtocol.addCollateral(positionId, topUp);
+        emit GuardTriggered(positionId, owner, healthFactor, "AUTO_COLLATERAL_TOPUP");
     }
 
     function _handleHealthFactorUpdate(bytes32[] calldata eventTopics, bytes calldata data) internal {
+        // HealthFactorUpdated(uint256 indexed positionId, address indexed owner, uint256 healthFactor, uint256 collateral, uint256 debt)
+        if (eventTopics.length < 3) return;
         uint256 positionId = uint256(eventTopics[1]);
+        address owner = address(uint160(uint256(eventTopics[2])));
         (uint256 healthFactor,,) = abi.decode(data, (uint256, uint256, uint256));
 
-        // If critically low (< 1.15) but not yet liquidatable, do partial debt repay
+        // Act when critically low (< 1.15) but not yet at liquidation threshold
         if (healthFactor < 1.15e18 && healthFactor > 1.0e18) {
-            try lendingProtocol.positions(positionId) returns (
-                address owner, address, uint256, uint256 debtAmount, bool isOpen
-            ) {
-                if (!isOpen) return;
-                uint256 repayAmount = debtAmount / 10; // repay 10% of debt
-                lendingProtocol.repayDebt(positionId, repayAmount);
-                emit GuardTriggered(positionId, owner, healthFactor, "AUTO_PARTIAL_REPAY");
-            } catch {
-                emit GuardFailed(positionId, "Repay failed");
-            }
+            (,,, uint256 debtAmount, bool isOpen) = lendingProtocol.positions(positionId);
+            if (!isOpen) return;
+            uint256 repayAmount = debtAmount / 10; // repay 10%
+            lendingProtocol.repayDebt(positionId, repayAmount);
+            emit GuardTriggered(positionId, owner, healthFactor, "AUTO_PARTIAL_REPAY");
         }
     }
 }
