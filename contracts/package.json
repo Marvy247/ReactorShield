@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
+    "@somnia-chain/reactivity-contracts": "^0.1.6",
     "dotenv": "^17.2.0"
   }
 }
