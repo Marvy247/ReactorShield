@@ -26,10 +26,10 @@ const config: HardhatUserConfig = {
       url: RPC_URL,
       accounts: [PRIVATE_KEY],
     },
-    liskSepolia: {
-      url: "https://rpc.sepolia-api.lisk.com",
+    somniaTestnet: {
+      url: 'https://dream-rpc.somnia.network',
       accounts: [PRIVATE_KEY],
-      chainId: 4202,
+      chainId: 50312,
     },
   },
   etherscan: {
