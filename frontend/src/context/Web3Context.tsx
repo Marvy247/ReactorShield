@@ -41,15 +41,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
 
       // Switch to Somnia testnet
       try {
-        await window.ethereum.request('wallet_switchEthereumChain', [{ chainId: '0xC488' }]);
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xC488' }] });
       } catch {
-        await window.ethereum.request('wallet_addEthereumChain', [{
-          chainId: '0xC488',
-          chainName: 'Somnia Testnet',
-          nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 },
-          rpcUrls: ['https://dream-rpc.somnia.network'],
-          blockExplorerUrls: ['https://shannon-explorer.somnia.network'],
-        }]);
+        await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0xC488', chainName: 'Somnia Testnet', nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 }, rpcUrls: ['https://dream-rpc.somnia.network'], blockExplorerUrls: ['https://shannon-explorer.somnia.network'] }] });
       }
 
       const pub = createPublicClient({ chain: somniaTestnet, transport: http() });
