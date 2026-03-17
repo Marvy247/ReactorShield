@@ -111,6 +111,18 @@ The frontend streams `GuardTriggered`, `LiquidationRisk`, and `PositionProtected
 
 ---
 
+## Deployed Contracts (Somnia Testnet — Chain ID 50312)
+
+| Contract | Address |
+|---|---|
+| `PriceOracle` | [0xdC36Dcf86d3DC03c935999B124F79C3A5A05e42a](https://shannon-explorer.somnia.network/address/0xdC36Dcf86d3DC03c935999B124F79C3A5A05e42a) |
+| `MockLendingProtocol` | [0x34Ddbf6285909459EB83DA238703Ee50286f74A5](https://shannon-explorer.somnia.network/address/0x34Ddbf6285909459EB83DA238703Ee50286f74A5) |
+| `LiquidationGuard` | [0x4DC0b00c03042aaCe189d0423D94674CfC4d9751](https://shannon-explorer.somnia.network/address/0x4DC0b00c03042aaCe189d0423D94674CfC4d9751) |
+
+**Reactivity Subscription Tx:** [0x7e402cf9631451e403b30ac08fe197f9d03267f03ed50595c2f90fed4ad0fdf0](https://shannon-explorer.somnia.network/tx/0x7e402cf9631451e403b30ac08fe197f9d03267f03ed50595c2f90fed4ad0fdf0)
+
+---
+
 ## Running Locally
 
 ```bash
