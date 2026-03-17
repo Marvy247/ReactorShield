@@ -2,7 +2,7 @@ export const CONTRACT_ADDRESSES = {
   PipelineRegistry: '0xd8b4875b61130D651409d26C47D49f57BEbC1780' as `0x${string}`,
   ActionExecutor: '0x391926D40EF9d7e94f5656c4d0A8698714ff20Af' as `0x${string}`,
   MockTrigger: '0xaA5685419dBd36d93dD4627da89B8f94c39399C4' as `0x${string}`,
-  ActionLogger: '' as `0x${string}`, // fill after deploying ActionLogger on Remix
+  ActionLogger: '0x95c033E817023e2B1C4e6e55F70d488FeC39fd24' as `0x${string}`,
 };
 
 export const PIPELINE_REGISTRY_ABI = [

@@ -1,30 +1,67 @@
-# ReactChain — On-Chain Reactive Automation Hub
+# ReactChain
 
-> "Zapier for Somnia" — compose trustless automation pipelines that react to on-chain events in real-time, powered by Somnia Native Reactivity.
+> On-Chain Reactive Automation Hub — "Zapier for Somnia"
+
+ReactChain is a trustless automation protocol built on [Somnia Native Reactivity](https://docs.somnia.network/developer/reactivity). Users compose reactive pipelines entirely on-chain: when a contract emits an event, a chain reaction executes automatically — no bots, no off-chain servers, no polling.
 
 Built for the **Somnia Reactivity Mini Hackathon** · Deployed on Somnia Testnet
 
 ---
 
-## What It Does
+## How It Works
 
-ReactChain lets users create **reactive automation pipelines** entirely on-chain:
+```mermaid
+sequenceDiagram
+    participant User
+    participant MockTrigger
+    participant Reactivity as Reactivity Precompile (0x0100)
+    participant ActionExecutor
+    participant PipelineRegistry
+    participant ActionLogger
+    participant Frontend
 
+    User->>MockTrigger: call updatePrice() / breachThreshold() / transferToken()
+    MockTrigger->>Reactivity: emits event
+    Reactivity->>ActionExecutor: invokes _onEvent() via validator
+    ActionExecutor->>PipelineRegistry: reads active pipelines matching emitter + topic
+    ActionExecutor->>ActionLogger: calls execute() atomically
+    ActionLogger-->>ActionExecutor: emits ActionTriggered
+    ActionExecutor-->>Reactivity: emits PipelineExecuted
+    Reactivity-->>Frontend: pushes event via WebSocket (Reactivity SDK)
+    Frontend-->>User: Live Log updates in real-time
 ```
-[Trigger Contract emits event] → [Reactivity SDK fires] → [Action executes on-chain]
-```
-
-No bots. No off-chain servers. No polling. Just Somnia Reactivity.
 
 ---
 
-## How Reactivity Is Used
+## Architecture
 
-ReactChain uses **both layers** of the Somnia Reactivity SDK:
+```mermaid
+graph TD
+    subgraph Somnia Testnet
+        MT[MockTrigger\n0xaA56...9C4] -->|emits event| RP[Reactivity Precompile\n0x0100]
+        RP -->|invokes _onEvent| AE[ActionExecutor\n0x3919...Af]
+        AE -->|reads pipelines| PR[PipelineRegistry\n0xd8b4...80]
+        AE -->|calls execute| AL[ActionLogger\n0x95c0...24]
+        PR -->|recordExecution| PR
+    end
 
-### 1. On-Chain (Solidity Handler)
+    subgraph Frontend
+        WS[WebSocket\nReactivity SDK] -->|sdk.subscribe| LL[Live Log]
+        LL --> UI[Dashboard / Pipeline Cards]
+    end
 
-`ActionExecutor` inherits from `SomniaEventHandler` and is registered as a Reactivity subscriber. When a watched contract emits an event, Somnia validators invoke `_onEvent` directly in the EVM:
+    AE -->|PipelineExecuted event| WS
+```
+
+---
+
+## Reactivity SDK Integration
+
+ReactChain uses **both layers** of the Somnia Reactivity SDK.
+
+### On-Chain — Solidity Handler
+
+`ActionExecutor` inherits `SomniaEventHandler`. Validators invoke `_onEvent` directly in the EVM when `MockTrigger` emits any event:
 
 ```solidity
 import { SomniaEventHandler } from "@somnia-chain/reactivity-contracts/contracts/SomniaEventHandler.sol";
@@ -35,126 +72,70 @@ contract ActionExecutor is SomniaEventHandler {
         bytes32[] calldata eventTopics,
         bytes calldata data
     ) internal override {
-        // Scan active pipelines matching emitter + topic
-        // Execute their registered action contracts atomically
-        // Record execution count on PipelineRegistry
+        // Scan PipelineRegistry for active pipelines matching emitter + topic
+        // Call ActionLogger.execute() atomically for each match
+        // Emit PipelineExecuted with success/fail status
     }
 }
 ```
 
-The subscription is created via the TypeScript SDK:
+Subscription created via TypeScript SDK:
 
 ```ts
-import { SDK } from '@somnia-chain/reactivity';
-import { parseGwei } from 'viem';
-
 await sdk.createSoliditySubscription({
-  emitter: MOCK_TRIGGER_ADDRESS,          // watch this contract
+  emitter: MOCK_TRIGGER_ADDRESS,
   handlerContractAddress: ACTION_EXECUTOR_ADDRESS,
   priorityFeePerGas: parseGwei('2'),
   maxFeePerGas: parseGwei('10'),
   gasLimit: 2_000_000n,
-  isGuaranteed: true,   // guaranteed delivery
-  isCoalesced: false,   // one invocation per event
+  isGuaranteed: true,
+  isCoalesced: false,
 });
 ```
 
-### 2. Off-Chain (WebSocket Subscription)
+### Off-Chain — WebSocket Subscription
 
-The frontend uses `sdk.subscribe()` to stream `PipelineExecuted` events in real-time to the Live Log — zero polling, pure push:
+The frontend streams `PipelineExecuted` events in real-time via `sdk.subscribe()` — zero polling:
 
 ```ts
-import { SDK, type SubscriptionCallback } from '@somnia-chain/reactivity';
-
 sdk.subscribe({
   ethCalls: [],
   eventContractSources: [ACTION_EXECUTOR_ADDRESS],
   onData: (data: SubscriptionCallback) => {
-    // data.result.topics — event topics
-    // data.result.data   — encoded event data
-    // data.result.simulationResults — eth_call results
-    appendToLiveLog(data);
+    // Decode PipelineExecuted → update Live Log instantly
   },
 });
 ```
 
 ---
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Somnia Testnet                        │
-│                                                         │
-│  MockTrigger ──emits event──► Reactivity Precompile     │
-│       (0x0100)                        │                 │
-│                                       ▼                 │
-│                              ActionExecutor             │
-│                           (SomniaEventHandler)          │
-│                                       │                 │
-│                         reads pipelines from            │
-│                                       ▼                 │
-│                           PipelineRegistry              │
-│                         (stores pipeline configs)       │
-└─────────────────────────────────────────────────────────┘
-                                        │
-                          WebSocket (Reactivity SDK)
-                                        │
-                                        ▼
-                              React Frontend
-                           (Live Log, Dashboard)
-```
-
 ## Smart Contracts
 
-| Contract | Description |
-|---|---|
-| `PipelineRegistry` | Stores user pipelines: trigger contract + event topic → action contract + selector |
-| `ActionExecutor` | `SomniaEventHandler` — invoked by validators, executes pipeline actions |
-| `MockTrigger` | Demo event emitter with `PriceUpdated`, `ThresholdBreached`, `TokenTransferred` |
+| Contract | Address | Description |
+|---|---|---|
+| `PipelineRegistry` | [`0xd8b4875b61130D651409d26C47D49f57BEbC1780`](https://shannon-explorer.somnia.network/address/0xd8b4875b61130D651409d26C47D49f57BEbC1780) | Stores pipeline configs: trigger + topic → action + selector |
+| `ActionExecutor` | [`0x391926D40EF9d7e94f5656c4d0A8698714ff20Af`](https://shannon-explorer.somnia.network/address/0x391926D40EF9d7e94f5656c4d0A8698714ff20Af) | `SomniaEventHandler` — invoked by validators, executes pipelines |
+| `MockTrigger` | [`0xaA5685419dBd36d93dD4627da89B8f94c39399C4`](https://shannon-explorer.somnia.network/address/0xaA5685419dBd36d93dD4627da89B8f94c39399C4) | Demo event emitter: `PriceUpdated`, `ThresholdBreached`, `TokenTransferred` |
+| `ActionLogger` | [`0x95c033E817023e2B1C4e6e55F70d488FeC39fd24`](https://shannon-explorer.somnia.network/address/0x95c033E817023e2B1C4e6e55F70d488FeC39fd24) | On-chain action: records permanent log entries, emits `ActionTriggered` |
 
-### Deployed Addresses (Somnia Testnet)
-
-| Contract | Address |
-|---|---|
-| PipelineRegistry | `TBD` |
-| ActionExecutor | `TBD` |
-| MockTrigger | `TBD` |
+**Reactivity Subscription Tx:** [`0xc83f46bf...`](https://shannon-explorer.somnia.network/tx/0xc83f46bf872ad2f91ebc3d61bc1cb315e114bd68c5112ff28f8f775652c3c3f3)
 
 ---
 
 ## Running Locally
 
-### Frontend
-
 ```bash
+# Frontend
 cd frontend
 npm install
 npm run dev
 ```
 
-Add deployed contract addresses to `frontend/src/utils/contracts.ts`:
-
-```ts
-export const CONTRACT_ADDRESSES = {
-  PipelineRegistry: '0x...',
-  ActionExecutor: '0x...',
-  MockTrigger: '0x...',
-};
-```
-
-### Contracts
-
 ```bash
+# Contracts
 cd contracts
 npm install
 npx hardhat compile
-```
-
-Deploy via Remix IDE (recommended) or:
-
-```bash
-npx hardhat run scripts/deploy.ts --network somniaTestnet
 ```
 
 ---
@@ -162,21 +143,24 @@ npx hardhat run scripts/deploy.ts --network somniaTestnet
 ## Demo Flow
 
 1. Connect MetaMask to Somnia Testnet
-2. Create a pipeline: `MockTrigger → PriceUpdated → recordExecution`
-3. Click "Price Updated" in the Trigger Simulator
+2. Create a pipeline: `MockTrigger → PriceUpdated → ActionLogger.execute()`
+3. Click **Price Updated** in the Trigger Simulator
 4. Watch the Live Log update in real-time via Reactivity SDK WebSocket
-5. See execution count increment on the Pipeline Card
+5. See execution count increment on the Pipeline Card automatically
+6. Check the Subscription Status card — links directly to the on-chain subscription
 
 ---
 
 ## Tech Stack
 
-- **Somnia Reactivity SDK** (`@somnia-chain/reactivity`) — WebSocket subscriptions + Solidity handler invocations
-- **Solidity 0.8.30** — `SomniaEventHandler`, `PipelineRegistry`, `MockTrigger`
-- **React + Vite + TypeScript** — Frontend
-- **viem** — Contract interactions
-- **Framer Motion** — Animations
-- **Tailwind CSS v4** — Styling
+| Layer | Technology |
+|---|---|
+| Reactivity | `@somnia-chain/reactivity` SDK — WebSocket + Solidity handler invocations |
+| Smart Contracts | Solidity 0.8.30 — `SomniaEventHandler`, `PipelineRegistry`, `ActionLogger` |
+| Frontend | React + Vite + TypeScript |
+| Web3 | viem |
+| UI | Tailwind CSS v4 + Framer Motion |
+| Network | Somnia Testnet (Chain ID: 50312) |
 
 ---
 
