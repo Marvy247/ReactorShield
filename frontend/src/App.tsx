@@ -7,6 +7,7 @@ import { WalletConnect } from './components/WalletConnect';
 import { PipelineBuilder } from './components/PipelineBuilder';
 import { PipelineCard } from './components/PipelineCard';
 import { LiveLog } from './components/LiveLog';
+import { SubscriptionStatus } from './components/SubscriptionStatus';
 import { TriggerSimulator } from './components/TriggerSimulator';
 import { usePipelines } from './hooks/usePipelines';
 import { useWeb3 } from './context/Web3Context';
@@ -130,7 +131,10 @@ function Dashboard() {
             <TriggerSimulator />
           </div>
 
-          <LiveLog />
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2"><LiveLog onExecution={fetchPipelines} /></div>
+            <SubscriptionStatus />
+          </div>
 
           <div>
             <div className="flex items-center justify-between mb-4">

@@ -11,7 +11,7 @@ const TRIGGER_EVENTS = [
   { label: 'TokenTransferred', sig: 'TokenTransferred(address,address,uint256)' },
 ];
 
-const ACTION_SELECTOR = toFunctionSelector('recordExecution(uint256)');
+const ACTION_SELECTOR = toFunctionSelector('execute()');
 
 export function PipelineBuilder({ onCreated }: { onCreated: () => void }) {
   const { createPipeline } = usePipelines();
@@ -21,8 +21,8 @@ export function PipelineBuilder({ onCreated }: { onCreated: () => void }) {
 
   const handleCreate = async () => {
     if (!label.trim()) { toast.error('Give your pipeline a name'); return; }
-    if (!CONTRACT_ADDRESSES.MockTrigger || !CONTRACT_ADDRESSES.PipelineRegistry) {
-      toast.error('Contract addresses not set — deploy contracts first'); return;
+    if (!CONTRACT_ADDRESSES.MockTrigger || !CONTRACT_ADDRESSES.ActionLogger) {
+      toast.error('Contract addresses not set — deploy ActionLogger first'); return;
     }
     setLoading(true);
     try {
@@ -30,7 +30,7 @@ export function PipelineBuilder({ onCreated }: { onCreated: () => void }) {
       await createPipeline(
         CONTRACT_ADDRESSES.MockTrigger as Address,
         topic,
-        CONTRACT_ADDRESSES.PipelineRegistry as Address,
+        CONTRACT_ADDRESSES.ActionLogger as Address,
         ACTION_SELECTOR,
         label.trim()
       );
@@ -73,7 +73,7 @@ export function PipelineBuilder({ onCreated }: { onCreated: () => void }) {
         <div className="text-accent-indigo font-bold text-lg">→</div>
         <div className="flex-1 p-3 rounded-xl bg-accent-emerald/5 border border-accent-emerald/20 text-center">
           <div className="text-xs text-text-pale mb-1">ACTION</div>
-          <div className="font-mono text-accent-emerald text-xs truncate">recordExecution</div>
+          <div className="font-mono text-accent-emerald text-xs truncate">ActionLogger.execute()</div>
         </div>
       </div>
 
