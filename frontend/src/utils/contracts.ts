@@ -1,8 +1,7 @@
-// Update these after deploying on Remix IDE
 export const CONTRACT_ADDRESSES = {
-  PriceOracle: '' as `0x${string}`,
-  MockLendingProtocol: '' as `0x${string}`,
-  LiquidationGuard: '' as `0x${string}`,
+  PriceOracle: '0xdC36Dcf86d3DC03c935999B124F79C3A5A05e42a' as `0x${string}`,
+  MockLendingProtocol: '0x34Ddbf6285909459EB83DA238703Ee50286f74A5' as `0x${string}`,
+  LiquidationGuard: '0x4DC0b00c03042aaCe189d0423D94674CfC4d9751' as `0x${string}`,
 };
 
 export const PRICE_ORACLE_ABI = [
