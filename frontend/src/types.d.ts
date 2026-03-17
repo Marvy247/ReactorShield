@@ -2,8 +2,7 @@ export {};
 
 declare global {
   interface Window {
-    ethereum?: {
-      request: (args: { method: string }) => Promise<string[]>;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ethereum?: any;
   }
 }
